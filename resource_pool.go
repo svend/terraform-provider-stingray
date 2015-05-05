@@ -171,6 +171,7 @@ func resourcePoolRead(d *schema.ResourceData, meta interface{}) error {
 	d.Set("load_balancing_priority_enabled", bool(*r.LoadBalancing.PriorityEnabled))
 	d.Set("monitors", []string(*r.Basic.Monitors))
 	d.Set("nodes", nodesTableToNodes(*r.Basic.NodesTable))
+	d.Set("nodes_table", flattenNodesTable(*r.Basic.NodesTable))
 	d.Set("note", string(*r.Basic.Note))
 	d.Set("passive_monitoring", bool(*r.Basic.PassiveMonitoring))
 	d.Set("tcp_nagle", bool(*r.TCP.Nagle))
@@ -263,4 +264,39 @@ func nodesTableToNodes(t []stingray.Node) []string {
 	}
 
 	return nodes
+}
+
+func expandNodesTable(configured []interface{}) (*stingray.NodesTable, error) {
+	table := make(stingray.NodesTable, 0, len(configured))
+
+	for _, raw := range configured {
+		data := raw.(map[string]interface{})
+
+		s := stingray.Node{
+			Node:     stingray.String(data["node"].(string)),
+			Priority: stingray.Int(data["priority"].(int)),
+			State:    stingray.String(data["state"].(string)),
+			Weight:   stingray.Int(data["weight"].(int)),
+		}
+
+		table = append(table, s)
+	}
+
+	return &table, nil
+}
+
+func flattenNodesTable(list stingray.NodesTable) []map[string]interface{} {
+	result := make([]map[string]interface{}, 0, len(list))
+
+	for _, i := range list {
+		s := map[string]interface{}{
+			"node":     *i.Node,
+			"priority": *i.Priority,
+			"state":    *i.State,
+			"weight":   *i.Weight,
+		}
+		result = append(result, s)
+	}
+
+	return result
 }
