@@ -84,6 +84,39 @@ func resourcePool() *schema.Resource {
 				},
 			},
 
+			"nodes_table": &schema.Schema{
+				Type:     schema.TypeSet,
+				Optional: true,
+				Computed: true,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"node": &schema.Schema{
+							Type:     schema.TypeString,
+							Required: true,
+						},
+						"priority": &schema.Schema{
+							Type:     schema.TypeInt,
+							Optional: true,
+							Default:  1,
+						},
+						"state": &schema.Schema{
+							Type:     schema.TypeString,
+							Optional: true,
+							Default:  "active",
+						},
+						"weight": &schema.Schema{
+							Type:     schema.TypeInt,
+							Optional: true,
+							Default:  1,
+						},
+					},
+				},
+				Set: func(v interface{}) int {
+					m := v.(map[string]interface{})
+					return hashcode.String(m["node"].(string))
+				},
+			},
+
 			"note": &schema.Schema{
 				Type:     schema.TypeString,
 				Optional: true,
