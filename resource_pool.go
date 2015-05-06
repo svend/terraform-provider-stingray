@@ -162,6 +162,12 @@ func resourcePoolRead(d *schema.ResourceData, meta interface{}) error {
 		return fmt.Errorf("Error reading resource: %s", err)
 	}
 
+	_, nodesOk := d.GetOk("nodes")
+	_, nodesTableOk := d.GetOk("nodes_table")
+	if nodesOk && nodesTableOk {
+		return fmt.Errorf("Error: cannot define both nodes and nodes_table.")
+	}
+
 	d.Set("connection_max_connect_time", int(*r.Connection.MaxConnectTime))
 	d.Set("connection_max_connections_per_node", int(*r.Connection.MaxConnectionsPerNode))
 	d.Set("connection_max_queue_size", int(*r.Connection.MaxQueueSize))
@@ -212,7 +218,8 @@ func resourcePoolSet(d *schema.ResourceData, meta interface{}) error {
 	setString(&r.LoadBalancing.Algorithm, d, "load_balancing_algorithm")
 	setBool(&r.LoadBalancing.PriorityEnabled, d, "load_balancing_priority_enabled")
 	setStringSet(&r.Basic.Monitors, d, "monitors")
-	setNodesTable(&r.Basic.NodesTable, d, "nodes")
+	setNodes(&r.Basic.NodesTable, d, "nodes")
+	setNodesTable(&r.Basic.NodesTable, d, "nodes_table")
 	setString(&r.Basic.Note, d, "note")
 	setBool(&r.Basic.PassiveMonitoring, d, "passive_monitoring")
 	setBool(&r.TCP.Nagle, d, "tcp_nagle")
@@ -227,7 +234,7 @@ func resourcePoolSet(d *schema.ResourceData, meta interface{}) error {
 	return nil
 }
 
-func setNodesTable(target **stingray.NodesTable, d *schema.ResourceData, key string) {
+func setNodes(target **stingray.NodesTable, d *schema.ResourceData, key string) {
 	if _, ok := d.GetOk(key); ok {
 		var nodes []string
 		if v := d.Get(key).(*schema.Set); v.Len() > 0 {
@@ -264,6 +271,13 @@ func nodesTableToNodes(t []stingray.Node) []string {
 	}
 
 	return nodes
+}
+
+func setNodesTable(target **stingray.NodesTable, d *schema.ResourceData, key string) {
+	if _, ok := d.GetOk(key); ok {
+		table := d.Get(key).(*schema.Set).List()
+		*target, _ = expandNodesTable(table)
+	}
 }
 
 func expandNodesTable(configured []interface{}) (*stingray.NodesTable, error) {
